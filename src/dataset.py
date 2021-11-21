@@ -156,3 +156,12 @@ class DataModule(pl.LightningDataModule):
 #             drop_last=True, 
 #             collate_fn=lambda x: x,
         )
+    def test_dataloader(self):
+        return DataLoader(
+            self.data_test, 
+            batch_size=self.hparams.batch_size, 
+            num_workers=4, 
+            shuffle=False,
+#             drop_last=True, 
+#             collate_fn=lambda x: x,
+        )

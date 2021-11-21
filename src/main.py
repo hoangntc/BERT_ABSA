@@ -2,6 +2,7 @@ import os, sys, re, datetime, random, gzip, json
 from tqdm.autonotebook import tqdm
 import pandas as pd
 import numpy as np
+import glob
 from pathlib import Path
 from itertools import accumulate
 import argparse
@@ -52,7 +53,7 @@ def build_trainder(config):
     
     # callbacks
     checkpoint = ModelCheckpoint(
-        dirpath=trainer_params['checkpoint_path'], 
+        dirpath=trainer_params['checkpoint_dir'], 
         filename='{epoch}-{val_loss:.4f}-{val_acc:.4f}-{val_macro_f1:.4f}-{val_micro_f1:.4f}',
         save_top_k=trainer_params['top_k'],
         verbose=True,
@@ -85,7 +86,7 @@ def build_trainder(config):
 def main():
     parser = argparse.ArgumentParser(description='Training.')
 
-    parser.add_argument('-config_file', help='config file path', default='../src/restaurant_config.json', type=str)
+    parser.add_argument('-config_file', help='config file path', default='../src/config/restaurant_config.json', type=str)
     parser.add_argument('-f', '--fff', help='a dummy argument to fool ipython', default='1')
     args = parser.parse_args()
 
@@ -93,7 +94,19 @@ def main():
     seed_everything(args.config['data_params']['seed'], workers=True)
     data, clf = build_model(args.config)
     trainer, trainer_kwargs = build_trainder(args.config)
-    trainer.fit(clf, data)
+    
+    if args.config['trainer_params']['train']:
+        print('Starting training...')
+        trainer.fit(clf, data)
+    if args.config['trainer_params']['test']:
+        print('Starting testing...')
+        checkpoint_dir = Path(args.config['trainer_params']['checkpoint_dir'])
+        print(f'Load checkpoint from: {str(checkpoint_dir)}')
+        paths = sorted(checkpoint_dir.glob('*.ckpt'))
+        for p in paths:
+            print(p)
+            model_test = SentimentClassifier.load_from_checkpoint(p)
+            result = trainer.test(model_test, datamodule=data)
     
 if __name__ == "__main__":
     main()

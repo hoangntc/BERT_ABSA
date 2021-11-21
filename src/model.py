@@ -111,3 +111,39 @@ class SentimentClassifier(pl.LightningModule):
             'val_micro_f1': avg_micro_f1,
         }
         self.log_dict(logs, prog_bar=True)
+     
+    def test_step(self, batch, batch_idx):
+        logits = self.forward(
+            input_ids=batch['input_ids'],
+            attention_mask=batch['attention_mask'],
+            token_type_ids=batch['token_type_ids'],
+            labels=batch['label'],
+        )
+        
+        labels = batch['label']
+        ce_loss = self.cross_entropy_loss(logits, labels)        
+        acc = utils.calc_accuracy(logits, labels).squeeze()
+        macro_f1 = utils.calc_f1(logits, labels, avg_type='macro').squeeze()
+        micro_f1 = utils.calc_f1(logits, labels, avg_type='micro').squeeze()
+
+        logs = {
+            'loss': ce_loss, 
+            'acc': acc,
+            'macro_f1': macro_f1,
+            'micro_f1': micro_f1
+        }
+        return logs
+    
+    def test_epoch_end(self, test_step_outputs):
+        avg_loss = torch.stack([x['loss'] for x in test_step_outputs]).mean().cpu()
+        avg_acc = torch.stack([x['acc'] for x in test_step_outputs]).mean().cpu()
+        avg_macro_f1 = torch.stack([x['macro_f1'] for x in test_step_outputs]).mean().cpu()
+        avg_micro_f1 = torch.stack([x['micro_f1'] for x in test_step_outputs]).mean().cpu()
+        logs = {
+            'test_loss': avg_loss, 
+            'test_acc': avg_acc,
+            'test_macro_f1': avg_macro_f1,
+            'test_micro_f1': avg_micro_f1,
+        }
+        self.log_dict(logs, prog_bar=True)
+        return logs
