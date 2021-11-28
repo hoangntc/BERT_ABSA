@@ -23,90 +23,121 @@ from pytorch_lightning.trainer.trainer import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.utilities.seed import seed_everything
 
+from ray.tune.integration.pytorch_lightning import TuneReportCallback
+from ray import tune
+from ray.tune import CLIReporter
+from ray.tune.schedulers import MedianStoppingRule, ASHAScheduler
+
 PROJ_PATH = Path(os.path.join(re.sub("/BERT_ABSA.*$", '', os.getcwd()), 'BERT_ABSA'))
 print(f'PROJ_PATH={PROJ_PATH}')
 sys.path.insert(1, str(PROJ_PATH))
 sys.path.insert(1, str(PROJ_PATH/'src'))
+import utils
 
 from dataset import DataModule
 from model import SentimentClassifier
 
 import commentjson
 from collections import OrderedDict
+from main import read_json, build_model, build_trainer
 
-def read_json(fname):
-    '''
-    Read in the json file specified by 'fname'
-    '''
-    with open(fname, 'rt') as handle:
-        return commentjson.load(handle, object_hook=OrderedDict)
+os.environ['TUNE_MAX_PENDING_TRIALS_PG'] = '1'
 
-def build_model(config):
-    data_params, model_params = config['data_params'], config['model_params']
-    data = DataModule(data_params)
-    model = SentimentClassifier(model_params)
-    return data, model
+def tuning(config):
+    seed_everything(config['data_params']['seed'], workers=True)
+    data, clf = build_model(config)
+    trainer, trainer_kwargs = build_trainer(config, phase='tune')
+    trainer.fit(clf, data)
+        
+def get_config(experiment_name):
+    if experiment_name == 'restaurant':
+        config = {
+            "data_params": {
+                "data_train_dir": str(PROJ_PATH / "dataset/preprocessed_data/Restaurants_Train.csv"),
+                "data_test_dir": "../dataset/preprocessed_data/Restaurants_Test.csv",
+                "transformation": tune.choice(['QA_M', 'MLI_M', 'KW_M']),
+                "num_classes": 3,
+                "batch_size": 128,
+                "bert_name": "bert-base-uncased",
+                "max_length": tune.choice([128, 200]),
+                "seed": 12345,
+            },
 
-def build_trainder(config):
-    trainer_params = config['trainer_params']
-    data_params = config['data_params']
+            "model_params": {
+                "pretrained_bert_name": "bert-base-uncased",
+                "hidden_size": tune.choice([128, 256]),
+                "hidden_dropout_prob": 0.1,
+                "lr": tune.loguniform(1e-4, 1e-1),
+            },
     
-    # callbacks
-    checkpoint = ModelCheckpoint(
-        dirpath=trainer_params['checkpoint_dir'], 
-        filename='{epoch}-{val_loss:.4f}-{val_acc:.4f}-{val_macro_f1:.4f}-{val_micro_f1:.4f}',
-        save_top_k=trainer_params['top_k'],
-        verbose=True,
-        monitor=trainer_params['metric'],
-        mode=trainer_params['mode'],
-    )
-    early_stopping = EarlyStopping(
-        monitor='val_loss', 
-        min_delta=0.00, 
-        patience=trainer_params['patience'],
-        verbose=False,
-        mode=trainer_params['mode'],
-    )
-    callbacks = [checkpoint, early_stopping]
-    
-    # trainer_kwargs
-    trainer_kwargs = {
-        'max_epochs': trainer_params['max_epochs'],
-        'gpus': 1 if torch.cuda.is_available() else 0,
-    #     "progress_bar_refresh_rate": p_refresh,
-    #     'gradient_clip_val': hyperparameters['grad_clip'],
-        'weights_summary': 'full',
-        'deterministic': True,
-        'callbacks': callbacks,
-    }
+            "trainer_params": {
+                "checkpoint_dir": "../model/restaurants",
+                "top_k": 3,
+                "max_epochs": 100,
+                "metric": "val_loss",
+                "patience": 10,
+                "mode": "min",
+            }
+        }
+            
+    if experiment_name == 'laptop':
+        config = {
+            "data_params": {
+                "data_train_dir": str(PROJ_PATH / "dataset/preprocessed_data/Laptops_Train.csv"),
+                "data_test_dir": "../dataset/preprocessed_data/Laptops_Test.csv",
+                "transformation": tune.choice(['QA_M', 'MLI_M', 'KW_M']),
+                "num_classes": 3,
+                "batch_size": 128,
+                "bert_name": "bert-base-uncased",
+                "max_length": 128,
+                "seed": 12345,
+            },
 
-    trainer = Trainer(**trainer_kwargs)
-    return trainer, trainer_kwargs
+            "model_params": {
+                "pretrained_bert_name": "bert-base-uncased",
+                "hidden_size": tune.choice([128, 256]),
+                "hidden_dropout_prob": 0.1,
+                "lr": tune.loguniform(1e-4, 1e-1),
+            },
+    
+            "trainer_params": {
+                "checkpoint_dir": "../model/laptops",
+                "top_k": 3,
+                "max_epochs": 100,
+                "metric": "val_loss",
+                "patience": 10,
+                "mode": "min",
+            }
+        }
+    return config
 
 def main():
-    parser = argparse.ArgumentParser(description='Training.')
+    parser = argparse.ArgumentParser(description='Tuning.')
 
-    parser.add_argument('-config_file', help='config file path', default='../src/config/restaurant_config.json', type=str)
-    parser.add_argument('-f', '--fff', help='a dummy argument to fool ipython', default='1')
+#     parser.add_argument('-config_file', help='config file path', default='../src/config/restaurant_config.json', type=str)
+    parser.add_argument('-e', '--experiment', default='restaurant', type=str)
     args = parser.parse_args()
+    experiment_name = args.experiment
+    experiment_dir = str(PROJ_PATH / 'experiment' / experiment_name )
+    n_experiment = 100
+    
+    if not os.path.exists(experiment_dir): os.mkdir(experiment_dir)
 
-    args.config = read_json(args.config_file)
-    seed_everything(args.config['data_params']['seed'], workers=True)
-    data, clf = build_model(args.config)
-    trainer, trainer_kwargs = build_trainder(args.config)
-    
-    if args.config['trainer_params']['train']:
-        print('Starting training...')
-        trainer.fit(clf, data)
-    if args.config['trainer_params']['test']:
-        print('Starting testing...')
-        checkpoint_dir = Path(args.config['trainer_params']['checkpoint_dir'])
-        print(f'Load checkpoint from: {str(checkpoint_dir)}')
-        paths = sorted(checkpoint_dir.glob('*.ckpt'))
-        for p in paths:
-            print(p)
-            model_test = SentimentClassifier.load_from_checkpoint(p)
-            result = trainer.test(model_test, datamodule=data)
-    
+    print('Starting tuning...')    
+    scheduler = ASHAScheduler(
+        metric='acc',
+        mode='max',
+        max_t=50,
+        grace_period=1,
+        reduction_factor=2)
+    config = get_config(experiment_name)
+    analysis = tune.run(
+        tune.with_parameters(tuning),
+        config=config,
+        resources_per_trial={'gpu': 1},
+        local_dir=experiment_dir,
+        scheduler=scheduler,
+        num_samples=n_experiment)
+        
 if __name__ == "__main__":
     main()

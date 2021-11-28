@@ -1,8 +1,8 @@
 {
     "data_params": {
-        "data_train_dir": "../dataset/preprocessed_data/Laptops_Train.csv",
-        "data_test_dir": "../dataset/preprocessed_data/Laptops_Test.csv",
-        "transformation": "QA_M",
+        "data_train_dir": "../dataset/preprocessed_data/Laptops_Train_data.pkl",
+        "data_test_dir": "../dataset/preprocessed_data/Laptops_Test_data.pkl",
+        "transformation": "KW_M",
         "num_classes": 3,
         "batch_size": 64,
         "bert_name": "bert-base-uncased",
@@ -24,7 +24,7 @@
         "metric": "val_loss",
         "patience": 10,
         "mode": "min",
-        "train": true,
+        "train": false,
         "test": true
     }
 }

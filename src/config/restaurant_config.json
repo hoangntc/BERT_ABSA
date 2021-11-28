@@ -1,7 +1,7 @@
 {
     "data_params": {
-        "data_train_dir": "../dataset/preprocessed_data/Restaurants_Train.csv",
-        "data_test_dir": "../dataset/preprocessed_data/Restaurants_Test.csv",
+        "data_train_dir": "../dataset/preprocessed_data/Restaurants_Train_data.pkl",
+        "data_test_dir": "../dataset/preprocessed_data/Restaurants_Test_data.pkl",
         "transformation": "QA_M",
         "num_classes": 3,
         "batch_size": 128,
