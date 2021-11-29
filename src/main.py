@@ -38,7 +38,7 @@ import utils
 from utils import read_json
 
 from dataset import DataModule
-from model import SentimentClassifier
+from model import SentimentClassifier, SynSentimentClassifier, SynSemSentimentClassifier
 
 def build_model(config, model_name):
     data_params, model_params = config['data_params'], config['model_params']
@@ -112,7 +112,7 @@ def execute(args, phase='train'):
         checkpoint_dir = Path(config['trainer_params']['checkpoint_dir'])
         print(f'Load checkpoint from: {str(checkpoint_dir)}')
         paths = sorted(checkpoint_dir.glob('*.ckpt'))
-        filtered_paths = [p for p in paths if p.startswith(f'model={args.model_name}-')]
+        filtered_paths = [p for p in paths if f'model={args.model_name}-' in str(p)]
         for i, p in enumerate(filtered_paths):
             print(f'Load model {i}: {p}')
             model_test = load_model_test(args.model_name, p)

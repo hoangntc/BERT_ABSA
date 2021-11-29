@@ -35,20 +35,20 @@ sys.path.insert(1, str(PROJ_PATH/'src'))
 import utils
 
 from dataset import DataModule
-from model import SentimentClassifier
+from model import SentimentClassifier, SynSentimentClassifier, SynSemSentimentClassifier
 
 import commentjson
 from collections import OrderedDict
 from main import read_json, build_model, build_trainer
 
 os.environ['TUNE_MAX_PENDING_TRIALS_PG'] = '1'
-MODEL_NAME = 'bert'
-# MODEL_NAME = 'syn'
+# MODEL_NAME = 'bert'
+MODEL_NAME = 'syn'
 
 def tuning(config):
     seed_everything(config['data_params']['seed'], workers=True)
     data, clf = build_model(config, model_name=MODEL_NAME)
-    trainer, trainer_kwargs = build_trainer(config, phase='tune')
+    trainer, trainer_kwargs = build_trainer(config, model_name=MODEL_NAME, phase='tune')
     trainer.fit(clf, data)
         
 def get_config(experiment_name):
@@ -61,14 +61,14 @@ def get_config(experiment_name):
                 "num_classes": 3,
                 "batch_size": 128,
                 "bert_name": "bert-base-uncased",
-                "max_length": tune.choice([100, 128]),
+                "max_length": 100,
                 "seed": 12345,
             },
 
             "model_params": {
                 "pretrained_bert_name": "bert-base-uncased",
-                "hidden_size": tune.choice([128, 256]),
-                "hidden_dropout_prob": 0.1,
+                "hidden_size": 256,
+                "hidden_dropout_prob": tune.choice([0.05, 0.1, 0.3, 0.5]),
                 "lr": tune.loguniform(1e-4, 1e-1),
             },
     
@@ -76,9 +76,9 @@ def get_config(experiment_name):
                 "checkpoint_dir": "../model/restaurants",
                 "top_k": 3,
                 "max_epochs": 100,
-                "metric": "val_loss",
-                "patience": 10,
-                "mode": "min",
+                "metric": "val_auc",
+                "patience": 20,
+                "mode": "max",
             }
         }
             
@@ -91,14 +91,14 @@ def get_config(experiment_name):
                 "num_classes": 3,
                 "batch_size": 128,
                 "bert_name": "bert-base-uncased",
-                "max_length": tune.choice([100, 128]),
+                "max_length": 128,
                 "seed": 12345,
             },
 
             "model_params": {
                 "pretrained_bert_name": "bert-base-uncased",
                 "hidden_size": 256,
-                "hidden_dropout_prob": 0.1,
+                "hidden_dropout_prob": tune.choice([0.05, 0.1, 0.3, 0.5]),
                 "lr": tune.loguniform(1e-4, 1e-1),
             },
     
@@ -106,9 +106,9 @@ def get_config(experiment_name):
                 "checkpoint_dir": "../model/laptops",
                 "top_k": 3,
                 "max_epochs": 100,
-                "metric": "val_loss",
-                "patience": 10,
-                "mode": "min",
+                "metric": "val_auc",
+                "patience": 20,
+                "mode": "max",
             }
         }
     return config
@@ -120,7 +120,7 @@ def main():
     parser.add_argument('-e', '--experiment', default='restaurant', type=str)
     args = parser.parse_args()
     experiment_name = args.experiment
-    experiment_dir = str(PROJ_PATH / 'experiment' / experiment_name )
+    experiment_dir = str(PROJ_PATH / 'experiment' / experiment_name / MODEL_NAME )
     n_experiment = 100
     
     if not os.path.exists(experiment_dir): os.mkdir(experiment_dir)

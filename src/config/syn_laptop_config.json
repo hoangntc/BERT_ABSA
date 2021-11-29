@@ -1,24 +1,24 @@
 {
     "data_params": {
-        "data_train_dir": "../dataset/preprocessed_data/Restaurants_Train_data.pkl",
-        "data_test_dir": "../dataset/preprocessed_data/Restaurants_Test_data.pkl",
+        "data_train_dir": "../dataset/preprocessed_data/Laptops_Train_data.pkl",
+        "data_test_dir": "../dataset/preprocessed_data/Laptops_Test_data.pkl",
         "transformation": "KW_M",
         "num_classes": 3,
         "batch_size": 128,
         "bert_name": "bert-base-uncased",
-        "max_length": 100,
+        "max_length": 128,
         "seed": 12345
     },
     
     "model_params": {
         "pretrained_bert_name": "bert-base-uncased",
         "hidden_size": 256,
-        "hidden_dropout_prob": 0.1,
-        "lr": 0.00015
+        "hidden_dropout_prob": 0.3,
+        "lr": 0.00013
     },
     
     "trainer_params": {
-        "checkpoint_dir": "../model/restaurants",
+        "checkpoint_dir": "../model/laptops",
         "top_k": 5,
         "max_epochs": 100,
         "metric": "val_auc",

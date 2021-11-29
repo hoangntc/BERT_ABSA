@@ -19,12 +19,12 @@
     
     "trainer_params": {
         "checkpoint_dir": "../model/laptops",
-        "top_k": 3,
+        "top_k": 5,
         "max_epochs": 100,
         "metric": "val_auc",
-        "patience": 10,
+        "patience": 30,
         "mode": "max",
-        "train": true,
+        "train": false,
         "test": true
     }
 }

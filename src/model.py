@@ -1,4 +1,4 @@
-import os, sys, re, datetime, random, gzip, json
+import os, sys, re, datetime, random, gzip, json, copy
 from tqdm.autonotebook import tqdm
 import pandas as pd
 import numpy as np
@@ -201,7 +201,7 @@ class SynSentimentClassifier(pl.LightningModule):
         self.dropout = nn.Dropout(p=self.hparams.hidden_dropout_prob)
         self.lin1 = nn.Linear(self.hidden_size, 64)
         self.dropout1 = nn.Dropout(p=self.hparams.hidden_dropout_prob)
-        self.classifier = nn.Linear(self.hidden_size, 3)
+        self.classifier = nn.Linear(64, 3)
         
         # Loss
         self.cross_entropy_loss = nn.CrossEntropyLoss()
@@ -232,7 +232,7 @@ class SynSentimentClassifier(pl.LightningModule):
         h4 = weighted_sum(h3, attn_weights)
         h5 = F.relu(self.lin(h4))
         h5 = self.dropout(h5)
-        h6 = F.relu(self.lin1(h6))
+        h6 = F.relu(self.lin1(h5))
         graph_embedding = self.dropout1(h6)
         logits = self.classifier(graph_embedding)
         return logits
@@ -372,7 +372,7 @@ class SynSemSentimentClassifier(pl.LightningModule):
         self.dropout1 = nn.Dropout(p=self.hparams.hidden_dropout_prob)
         self.lin2 = nn.Linear(self.hidden_size, 64)
         self.dropout2 = nn.Dropout(p=self.hparams.hidden_dropout_prob)
-        self.classifier = nn.Linear(self.hidden_size, 3)
+        self.classifier = nn.Linear(64, 3)
         
         # Loss
         self.cross_entropy_loss = nn.CrossEntropyLoss()
