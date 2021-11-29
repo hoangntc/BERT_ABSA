@@ -223,8 +223,9 @@ def main():
 #         hparams_filename='../src/config/restaurant_config.json',
 #         device='cpu',
 #     )
+#     save_path = '../output/bert_restaurant.csv'
 #     pred_res = restaurant_agent.get_prediction()
-#     pred_res.to_csv('../output/bert_restaurant.csv', index=False)
+#     pred_res.to_csv(save_path, index=False)
 #     ## Syn
 #     restaurant_agent = InferenceAgent(
 #         proj_path=str(PROJ_PATH),

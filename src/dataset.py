@@ -40,7 +40,7 @@ class Dataset(Dataset):
         self.transformation = transformation
         self.bert_tokenizer = bert_tokenizer
         self.max_length = max_length
-        self.polarity_dict = {'positive': 0, 'negative': 1, 'neutral': 2}
+        self.polarity_dict = {'negative': 0, 'neutral': 1, 'positive': 2}
         
         # load data
         self.data = pd.read_pickle(data_dir)

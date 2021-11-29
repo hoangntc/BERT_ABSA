@@ -34,7 +34,7 @@ import pandas as pd
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from stanfordcorenlp import StanfordCoreNLP
+# from stanfordcorenlp import StanfordCoreNLP
 import json
 from nltk.parse.corenlp import CoreNLPDependencyParser
 # nlps = StanfordCoreNLP(str(PROJ_PATH / 'misc/stanford-corenlp-4.3.2'))

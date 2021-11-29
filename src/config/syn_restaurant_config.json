@@ -24,7 +24,7 @@
         "metric": "val_auc",
         "patience": 30,
         "mode": "max",
-        "train": false,
+        "train": true,
         "test": true
     }
 }
