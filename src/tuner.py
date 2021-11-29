@@ -42,10 +42,12 @@ from collections import OrderedDict
 from main import read_json, build_model, build_trainer
 
 os.environ['TUNE_MAX_PENDING_TRIALS_PG'] = '1'
+MODEL_NAME = 'bert'
+# MODEL_NAME = 'syn'
 
 def tuning(config):
     seed_everything(config['data_params']['seed'], workers=True)
-    data, clf = build_model(config)
+    data, clf = build_model(config, model_name=MODEL_NAME)
     trainer, trainer_kwargs = build_trainer(config, phase='tune')
     trainer.fit(clf, data)
         
@@ -53,13 +55,13 @@ def get_config(experiment_name):
     if experiment_name == 'restaurant':
         config = {
             "data_params": {
-                "data_train_dir": str(PROJ_PATH / "dataset/preprocessed_data/Restaurants_Train.csv"),
-                "data_test_dir": "../dataset/preprocessed_data/Restaurants_Test.csv",
-                "transformation": tune.choice(['QA_M', 'MLI_M', 'KW_M']),
+                "data_train_dir": str(PROJ_PATH / "dataset/preprocessed_data/Restaurants_Train_data.pkl"),
+                "data_test_dir": "../dataset/preprocessed_data/Restaurants_Test_data.pkl",
+                "transformation": 'KW_M', # tune.choice(['QA_M', 'MLI_M', 'KW_M']),
                 "num_classes": 3,
                 "batch_size": 128,
                 "bert_name": "bert-base-uncased",
-                "max_length": tune.choice([128, 200]),
+                "max_length": tune.choice([100, 128]),
                 "seed": 12345,
             },
 
@@ -83,19 +85,19 @@ def get_config(experiment_name):
     if experiment_name == 'laptop':
         config = {
             "data_params": {
-                "data_train_dir": str(PROJ_PATH / "dataset/preprocessed_data/Laptops_Train.csv"),
-                "data_test_dir": "../dataset/preprocessed_data/Laptops_Test.csv",
-                "transformation": tune.choice(['QA_M', 'MLI_M', 'KW_M']),
+                "data_train_dir": str(PROJ_PATH / "dataset/preprocessed_data/Laptops_Train_data.pkl"),
+                "data_test_dir": "../dataset/preprocessed_data/Laptops_Test_data.pkl",
+                "transformation": 'KW_M', # tune.choice(['QA_M', 'MLI_M', 'KW_M']),
                 "num_classes": 3,
                 "batch_size": 128,
                 "bert_name": "bert-base-uncased",
-                "max_length": 128,
+                "max_length": tune.choice([100, 128]),
                 "seed": 12345,
             },
 
             "model_params": {
                 "pretrained_bert_name": "bert-base-uncased",
-                "hidden_size": tune.choice([128, 256]),
+                "hidden_size": 256,
                 "hidden_dropout_prob": 0.1,
                 "lr": tune.loguniform(1e-4, 1e-1),
             },

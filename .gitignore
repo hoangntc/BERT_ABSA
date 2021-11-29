@@ -3,3 +3,5 @@
 *.ckpt
 */lightning_logs/*
 misc/*
+experiment/restaurant/*
+experiment/laptop/*

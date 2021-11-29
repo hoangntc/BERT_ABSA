@@ -47,29 +47,31 @@ def build_model(config, model_name):
         model = SentimentClassifier(model_params)
     elif model_name == 'syn':
         model = SynSentimentClassifier(model_params)
+    elif model_name == 'synsem':
+        model = SynSentimentClassifier(model_params)
     return data, model
 
-def build_trainer(config, phase=None):
+def build_trainer(config, model_name, phase=None):
     trainer_params = config['trainer_params']
     data_params = config['data_params']
     
     # callbacks
     checkpoint = ModelCheckpoint(
         dirpath=trainer_params['checkpoint_dir'], 
-        filename='{epoch}-{val_loss:.4f}-{val_acc:.4f}-{val_macro_f1:.4f}-{val_micro_f1:.4f}',
+        filename=f'model={model_name}-' + '{epoch}-{val_loss:.4f}-{val_acc:.4f}-{val_auc:.4f}-{val_macro_f1:.4f}-{val_micro_f1:.4f}',
         save_top_k=trainer_params['top_k'],
         verbose=True,
         monitor=trainer_params['metric'],
         mode=trainer_params['mode'],
     )
     early_stopping = EarlyStopping(
-        monitor='val_loss', 
+        monitor=trainer_params['metric'], 
         min_delta=0.00, 
         patience=trainer_params['patience'],
         verbose=False,
         mode=trainer_params['mode'],
     )
-    metrics = {'loss': 'val_loss', 'acc': 'val_acc', 'macro_f1': 'val_macro_f1', 'micro_f1': 'val_micro_f1'}
+    metrics = {'loss': 'val_loss', 'acc': 'val_acc', 'auc': 'val_auc', 'macro_f1': 'val_macro_f1', 'micro_f1': 'val_micro_f1'}
     tuner = TuneReportCallback(metrics, on='validation_end')
     
     if phase == 'tune':
@@ -81,8 +83,6 @@ def build_trainer(config, phase=None):
     trainer_kwargs = {
         'max_epochs': trainer_params['max_epochs'],
         'gpus': 1 if torch.cuda.is_available() else 0,
-    #     "progress_bar_refresh_rate": p_refresh,
-    #     'gradient_clip_val': hyperparameters['grad_clip'],
         'weights_summary': 'full',
         'deterministic': True,
         'callbacks': callbacks,
@@ -91,18 +91,20 @@ def build_trainer(config, phase=None):
     trainer = Trainer(**trainer_kwargs)
     return trainer, trainer_kwargs
 
-def load_model_test(model_name, checkpoint):
+def load_model_test(model_name, checkpoint_path, map_location=None):
     if model_name == 'bert':
-        return SentimentClassifier.load_from_checkpoint(checkpoint) 
+        return SentimentClassifier.load_from_checkpoint(checkpoint_path=checkpoint_path, map_location=map_location) 
     elif model_name == 'syn':
-    return SynSentimentClassifier.load_from_checkpoint(checkpoint) 
+        return SynSentimentClassifier.load_from_checkpoint(checkpoint_path=checkpoint_path, map_location=map_location) 
+    elif model_name == 'synsem':
+        return SynSemSentimentClassifier.load_from_checkpoint(checkpoint_path=checkpoint_path, map_location=map_location) 
 
 def execute(args, phase='train'):
     config = args.config
     assert phase in ['train', 'test'], 'Invalid phase!'
     seed_everything(config['data_params']['seed'], workers=True)
     data, clf = build_model(config, args.model_name)
-    trainer, trainer_kwargs = build_trainer(config, phase=phase)
+    trainer, trainer_kwargs = build_trainer(config, model_name=args.model_name, phase=phase)
 
     if phase == 'train':
         trainer.fit(clf, data)
@@ -110,11 +112,11 @@ def execute(args, phase='train'):
         checkpoint_dir = Path(config['trainer_params']['checkpoint_dir'])
         print(f'Load checkpoint from: {str(checkpoint_dir)}')
         paths = sorted(checkpoint_dir.glob('*.ckpt'))
-        for p in paths:
-            print(p)
+        filtered_paths = [p for p in paths if p.startswith(f'model={args.model_name}-')]
+        for i, p in enumerate(filtered_paths):
+            print(f'Load model {i}: {p}')
             model_test = load_model_test(args.model_name, p)
             result = trainer.test(model_test, datamodule=data)
-            
             del model_test
     
     del data
@@ -125,10 +127,12 @@ def main():
     parser = argparse.ArgumentParser(description='Training.')
 
     parser.add_argument('-config_file', help='config file path', default='../src/config/restaurant_config.json', type=str)
-    parser.add_argument('-model_name', help='model name', default='SYN', type=str)
+    parser.add_argument('-model_name', help='model name', default='syn', type=str)
     parser.add_argument('-f', '--fff', help='a dummy argument to fool ipython', default='1')
     args = parser.parse_args()
     args.config = read_json(args.config_file)
+    
+    assert args.model_name in ['bert', 'syn', 'synsem'], 'Model not implemented yet!'
     
     if args.config['trainer_params']['train']:
         print('Starting training...')

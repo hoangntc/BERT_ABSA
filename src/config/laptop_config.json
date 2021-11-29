@@ -4,7 +4,7 @@
         "data_test_dir": "../dataset/preprocessed_data/Laptops_Test_data.pkl",
         "transformation": "KW_M",
         "num_classes": 3,
-        "batch_size": 64,
+        "batch_size": 128,
         "bert_name": "bert-base-uncased",
         "max_length": 128,
         "seed": 12345
@@ -12,19 +12,19 @@
     
     "model_params": {
         "pretrained_bert_name": "bert-base-uncased",
-        "hidden_size": 128,
+        "hidden_size": 256,
         "hidden_dropout_prob": 0.1,
-        "lr": 0.0001
+        "lr": 0.00013
     },
     
     "trainer_params": {
         "checkpoint_dir": "../model/laptops",
         "top_k": 3,
         "max_epochs": 100,
-        "metric": "val_loss",
+        "metric": "val_auc",
         "patience": 10,
-        "mode": "min",
-        "train": false,
+        "mode": "max",
+        "train": true,
         "test": true
     }
 }

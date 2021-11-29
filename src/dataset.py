@@ -178,7 +178,10 @@ class DataModule(pl.LightningDataModule):
         new_nodes = [n + graph_order*self.hparams.max_length for n in nodes]
         return new_nodes
     
-    def collate_fn(self, batch):        
+    def collate_fn(self, batch):      
+        id = [i['id'] for i in batch]
+        text = [i['text'] for i in batch]
+        term = [i['term'] for i in batch]
         label = torch.tensor([i['label'] for i in batch], dtype=torch.long)
         input_ids = torch.stack([i['input_ids'] for i in batch])
         token_type_ids = torch.stack([i['token_type_ids'] for i in batch])
@@ -191,6 +194,9 @@ class DataModule(pl.LightningDataModule):
         ], dtype=torch.long)
         adj = to_dense_adj(edge_index).squeeze() 
         return {
+            'id': id, 
+            'text': text,
+            'term': term,
             'label': label,
             'input_ids': input_ids,
             'token_type_ids': token_type_ids,
