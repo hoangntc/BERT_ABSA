@@ -4,15 +4,11 @@
 ## Directory structure:
 
 ```
-mri_transfer
 |   README.md
 |   requirement.txt
 |
 |--- dataset
 |   |-- preprocessed_data
-|   |   000_vectorize_mri.ipynb: prepare input for ML model
-|   |   001_train_xgb_and_stacking.ipynb: train ML model
-|   |   final_prediction: trained models
 |   |-- raw_data
 |
 |--- model
@@ -36,7 +32,15 @@ mri_transfer
 
 ## Installation
 
-### Basic libraries
+### Libraries
+
+To create all neccessary library, please run:
+
+```bash
+conda env create -f environment.yml
+```
+
+In case, the version of Pytorch and Cuda are not compatible on your machine, please remove all related lib in the `.yml` file; then install Pytorch , Pytorch Geometric separately.
 
 
 ### PyTorch
@@ -73,7 +77,7 @@ python src/parser.py
 ```
 
 ### Fine tuning
-Change the variable MODEL_NAME = 'bert'/'syn'/'sem', then run:
+Change the variable `MODEL_NAME = 'bert'/'syn'/'sem'`, then run:
 
 ```bash
 python src/tuner.py -e experiment_name

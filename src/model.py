@@ -42,9 +42,13 @@ class SentimentClassifier(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(params)
         self.tokenizer = BertTokenizer.from_pretrained(self.hparams.pretrained_bert_name)
-        self.bert = BertForSequenceClassification.from_pretrained(
-            self.hparams.pretrained_bert_name, num_labels=3, output_hidden_states=True, output_attentions=True, return_dict=False)
+        self.bert = BertModel.from_pretrained(
+            self.hparams.pretrained_bert_name, output_hidden_states=True, output_attentions=True, return_dict=False)
+        self.bert_size = self.bert.config.hidden_size
         self.hidden_size = self.bert.config.hidden_size
+        self.lin =  nn.Linear(self.bert_size, self.hidden_size)
+        self.dropout = nn.Dropout(p=self.hparams.hidden_dropout_prob)
+        self.classifier = nn.Linear(self.hidden_size, self.hparams.num_labels)
         self.cross_entropy_loss = nn.CrossEntropyLoss()
     
     def configure_optimizers(self):
@@ -52,13 +56,15 @@ class SentimentClassifier(pl.LightningModule):
         return optimizer  
     
     def forward(self, input_ids, attention_mask, token_type_ids, labels):
-        loss, logits, hidden, _ = self.bert(
+        pooled_output = self.bert(
             input_ids=input_ids, 
             attention_mask=attention_mask, 
             token_type_ids=token_type_ids,
-            labels=labels,
-        )
+        )[1]
         
+        h = F.relu(self.lin(pooled_output))
+        h = self.dropout(h)
+        logits = self.classifier(h)
         return logits
         
     def training_step(self, batch, batch_idx):
@@ -199,9 +205,7 @@ class SynSentimentClassifier(pl.LightningModule):
         # 
         self.lin =  nn.Linear(self.hidden_size, self.hidden_size)
         self.dropout = nn.Dropout(p=self.hparams.hidden_dropout_prob)
-        self.lin1 = nn.Linear(self.hidden_size, 64)
-        self.dropout1 = nn.Dropout(p=self.hparams.hidden_dropout_prob)
-        self.classifier = nn.Linear(64, 3)
+        self.classifier = nn.Linear(self.hidden_size, self.hparams.num_labels)
         
         # Loss
         self.cross_entropy_loss = nn.CrossEntropyLoss()
@@ -231,9 +235,7 @@ class SynSentimentClassifier(pl.LightningModule):
         attn_weights = self.attention(graph_attn, h3) 
         h4 = weighted_sum(h3, attn_weights)
         h5 = F.relu(self.lin(h4))
-        h5 = self.dropout(h5)
-        h6 = F.relu(self.lin1(h5))
-        graph_embedding = self.dropout1(h6)
+        graph_embedding = self.dropout(h5)
         logits = self.classifier(graph_embedding)
         return logits
         
@@ -368,11 +370,9 @@ class SynSemSentimentClassifier(pl.LightningModule):
         self.attention = AdditiveAttention(self.hidden_size, self.hidden_size)
         
         # 
-        self.lin1 =  nn.Linear(self.hidden_size, self.hidden_size)
+        self.lin1 =  nn.Linear(self.hidden_size*2, self.hidden_size)
         self.dropout1 = nn.Dropout(p=self.hparams.hidden_dropout_prob)
-        self.lin2 = nn.Linear(self.hidden_size, 64)
-        self.dropout2 = nn.Dropout(p=self.hparams.hidden_dropout_prob)
-        self.classifier = nn.Linear(64, 3)
+        self.classifier = nn.Linear(self.hidden_size, self.hparams.num_labels)
         
         # Loss
         self.cross_entropy_loss = nn.CrossEntropyLoss()
@@ -383,7 +383,7 @@ class SynSemSentimentClassifier(pl.LightningModule):
     
     def forward(self, input_ids, attention_mask, token_type_ids, edge_index, labels):
         bsize = input_ids.shape[0]
-        bert_features, pooler_output, _, _, _ = self.bert(
+        bert_features, pooler_output, _, _ = self.bert(
             input_ids=input_ids, 
             attention_mask=attention_mask, 
             token_type_ids=token_type_ids,
@@ -400,17 +400,15 @@ class SynSemSentimentClassifier(pl.LightningModule):
         batch_graph_shape = (bert_features.shape[0], bert_features.shape[1], syn_h1.shape[1])
         syn_h2 = torch.reshape(syn_h1, batch_graph_shape)
         mask = copy.deepcopy(attention_mask).reshape(-1).tile(self.hidden_size, 1).T.reshape(batch_graph_shape)
-        syn_h3 = mask * syn_h1
+        syn_h3 = mask * syn_h2
         graph_attn = self.attn_vector.squeeze().unsqueeze(0).repeat(bsize, 1)
         attn_weights = self.attention(graph_attn, syn_h3) 
         syn_h = weighted_sum(syn_h3, attn_weights)
         
-        # Combine semantic and Syntactic features
+        # Combine semantic and syntactic features
         h = torch.cat((sem_h, syn_h), dim=1)
         h1 = F.relu(self.lin1(h))
-        h1 = self.dropout1(h1)
-        h2 = F.relu(self.lin2(h2))
-        graph_embedding = self.dropout2(h2)
+        graph_embedding = self.dropout1(h1)
         
         # Get logits
         logits = self.classifier(graph_embedding)

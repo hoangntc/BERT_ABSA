@@ -48,7 +48,7 @@ def build_model(config, model_name):
     elif model_name == 'syn':
         model = SynSentimentClassifier(model_params)
     elif model_name == 'synsem':
-        model = SynSentimentClassifier(model_params)
+        model = SynSemSentimentClassifier(model_params)
     return data, model
 
 def build_trainer(config, model_name, phase=None):
@@ -82,7 +82,7 @@ def build_trainer(config, model_name, phase=None):
     # trainer_kwargs
     trainer_kwargs = {
         'max_epochs': trainer_params['max_epochs'],
-        'gpus': 1 if torch.cuda.is_available() else 0,
+        'gpus': [1] if torch.cuda.is_available() else 0,
         'weights_summary': 'full',
         'deterministic': True,
         'callbacks': callbacks,

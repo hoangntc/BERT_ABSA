@@ -51,12 +51,12 @@ class InferenceAgent:
 
         self.checkpoint_path = self.proj_path / ckpt_dirname / ckpt_filename
         
-        assert self.checkpoint_path.is_file(), 'checkpoint_path must be an existing file'
+        assert self.checkpoint_path.is_file(), f'checkpoint_path={self.checkpoint_path} must be an existing file'
         print(f'Load model: {self.checkpoint_path}')
         
         # data
         self.data = DataModule(hparams['data_params'])
-        self.polarity_dict = {'positive': 0, 'negative': 1, 'neutral': 2}
+        self.polarity_dict = {'negative': 0, 'neutral': 1, 'positive': 2}
         self.transformation = hparams['data_params']['transformation']
         self.max_length = hparams['data_params']['max_length']
         self.bert_tokenizer = BertTokenizer.from_pretrained(hparams['data_params']['bert_name'])
@@ -212,38 +212,43 @@ class InferenceAgent:
         return df[['id', 'text', 'term', 'label_id', 'label', 'tvt', 'pred_0', 'pred_1', 'pred_2']]
 
 def main():
-    device = 'cuda'
-#     # Restaurant
-#     ## Bert
-#     restaurant_agent = InferenceAgent(
-#         proj_path=str(PROJ_PATH),
-#         model_name='bert',
-#         ckpt_filename='epoch=4-val_loss=0.6445-val_acc=0.8003-val_macro_f1=0.7335-val_micro_f1=0.8003.ckpt',
-#         ckpt_dirname='model/restaurent',
-#         hparams_filename='../src/config/restaurant_config.json',
-#         device='cpu',
-#     )
-#     save_path = '../output/bert_restaurant.csv'
-#     pred_res = restaurant_agent.get_prediction()
-#     pred_res.to_csv(save_path, index=False)
-#     ## Syn
-#     restaurant_agent = InferenceAgent(
-#         proj_path=str(PROJ_PATH),
-#         model_name='syn',
-#         ckpt_filename='epoch=4-val_loss=0.6445-val_acc=0.8003-val_macro_f1=0.7335-val_micro_f1=0.8003.ckpt',
-#         ckpt_dirname='model/restaurent',
-#         hparams_filename='../src/config/restaurant_config.json',
-#         device='cpu',
-#     )
-#     pred_res = restaurant_agent.get_prediction()
-#     pred_res.to_csv('../output/syn_restaurant.csv', index=False)
+    device = 'cpu'
+    # Restaurant
+    ## Bert
+    restaurant_agent = InferenceAgent(
+        proj_path=str(PROJ_PATH),
+        model_name='bert',
+        ckpt_filename='model=bert-epoch=7-val_loss=0.8514-val_acc=0.7893-val_auc=0.9102-val_macro_f1=0.7312-val_micro_f1=0.7893.ckpt',
+        ckpt_dirname='model/restaurants',
+        hparams_filename='../src/config/bert_restaurant_config.json',
+        device=device,
+    )
+    save_path = '../output/bert_restaurant.csv'
+    print(f'Save to {save_path}')
+    pred_res = restaurant_agent.get_prediction()
+    pred_res.to_csv(save_path, index=False)
+    
+    ## Syn
+    restaurant_agent = InferenceAgent(
+        proj_path=str(PROJ_PATH),
+        model_name='syn',
+        ckpt_filename='model=syn-epoch=5-val_loss=0.8056-val_acc=0.7803-val_auc=0.9062-val_macro_f1=0.7209-val_micro_f1=0.7803.ckpt',
+        ckpt_dirname='model/restaurants',
+        hparams_filename='../src/config/syn_restaurant_config.json',
+        device=device,
+    )
+    save_path = '../output/syn_restaurant.csv'
+    print(f'Save to {save_path}')
+    pred_res = restaurant_agent.get_prediction()
+    pred_res.to_csv(save_path, index=False)
+    
 #     ## Sem
 #     restaurant_agent = InferenceAgent(
 #         proj_path=str(PROJ_PATH),
 #         model_name='synsem',
 #         ckpt_filename='epoch=4-val_loss=0.6445-val_acc=0.8003-val_macro_f1=0.7335-val_micro_f1=0.8003.ckpt',
-#         ckpt_dirname='model/restaurent',
-#         hparams_filename='../src/config/restaurant_config.json',
+#         ckpt_dirname='model/restaurants',
+#         hparams_filename='../src/config/sem_restaurant_config.json',
 #         device='cpu',
 #     )
 #     pred_res = restaurant_agent.get_prediction()
@@ -254,35 +259,43 @@ def main():
     laptop_agent = InferenceAgent(
         proj_path=str(PROJ_PATH), 
         model_name='bert',
-        ckpt_filename='epoch=4-val_loss=0.6445-val_acc=0.8003-val_macro_f1=0.7335-val_micro_f1=0.8003.ckpt',
+        ckpt_filename='model=bert-epoch=4-val_loss=0.6608-val_acc=0.7861-val_auc=0.9221-val_macro_f1=0.7576-val_micro_f1=0.7861.ckpt',
         ckpt_dirname='model/laptops',
-        hparams_filename='../src/config/laptop_config.json',
+        hparams_filename='../src/config/bert_laptop_config.json',
         device=device,
     )
+    save_path = '../output/bert_laptop.csv'
+    print(f'Save to {save_path}')
     pred_res = laptop_agent.get_prediction()
-    pred_res.to_csv('../output/bert_laptop.csv', index=False)
-    ## Syn
+    pred_res.to_csv(save_path, index=False)
+    
+#     ## Syn
 #     laptop_agent = InferenceAgent(
 #         proj_path=str(PROJ_PATH), 
 #         model_name='syn',
-#         ckpt_filename='epoch=4-val_loss=0.6445-val_acc=0.8003-val_macro_f1=0.7335-val_micro_f1=0.8003.ckpt',
+#         ckpt_filename='model=syn-epoch=3-val_loss=0.6911-val_acc=0.7665-val_auc=0.9204-val_macro_f1=0.7420-val_micro_f1=0.7665.ckpt',
 #         ckpt_dirname='model/laptops',
-#         hparams_filename='../src/config/laptop_config.json',
+#         hparams_filename='../src/config/syn_laptop_config.json',
 #         device=device,
 #     )
+#     save_path = '../output/syn_laptop.csv'
+#     print(f'Save to {save_path}')
 #     pred_res = laptop_agent.get_prediction()
-#     pred_res.to_csv('../output/syn_laptop.csv', index=False)
+#     pred_res.to_csv(save_path, index=False)
+    
 #     ## SynSem
 #     laptop_agent = InferenceAgent(
 #         proj_path=str(PROJ_PATH), 
-#         model_name='sem',
+#         model_name='synsem',
 #         ckpt_filename='epoch=4-val_loss=0.6445-val_acc=0.8003-val_macro_f1=0.7335-val_micro_f1=0.8003.ckpt',
 #         ckpt_dirname='model/laptops',
-#         hparams_filename='../src/config/laptop_config.json',
+#         hparams_filename='../src/config/sem_laptop_config.json',
 #         device=device,
 #     )
+#     save_path = '../output/sem_laptop.csv'
+#     print(f'Save to {save_path}')
 #     pred_res = laptop_agent.get_prediction()
-#     pred_res.to_csv('../output/synsem_laptop.csv', index=False)
+#     pred_res.to_csv(save_path, index=False)
         
 if __name__ == "__main__":
     main()
