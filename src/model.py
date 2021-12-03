@@ -23,7 +23,7 @@ from pytorch_lightning.trainer.trainer import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.utilities.seed import seed_everything
 
-from torch_geometric.nn import Sequential, HeteroConv, GINConv, GCNConv, SAGEConv, GATConv
+from torch_geometric.nn import Sequential, HeteroConv, GINConv, GCNConv, SAGEConv, GATConv, TransformerConv
 from sklearn.metrics import roc_auc_score
 
 PROJ_PATH = Path(os.path.join(re.sub("/BERT_ABSA.*$", '', os.getcwd()), 'BERT_ABSA'))
@@ -354,14 +354,14 @@ class SynSemSentimentClassifier(pl.LightningModule):
         self.dropout = nn.Dropout(p=self.hparams.hidden_dropout_prob)
         
         # Syntactic
-        heads = 9
+        heads = 3
         self.convs = Sequential('x, edge_index', [
-            (GATConv(self.bert_size, self.hidden_size, heads=heads), 'x, edge_index -> x'),
-            nn.ReLU(inplace=True),
-            (GATConv(heads * self.hidden_size, self.hidden_size, heads=heads), 'x, edge_index -> x'),
-            nn.ReLU(inplace=True),
-            (GATConv(heads * self.hidden_size, self.hidden_size, heads=1), 'x, edge_index -> x'),
-            nn.ReLU(inplace=True),
+            (TransformerConv(self.bert_size, self.hidden_size, heads=heads, dropout=self.hparams.hidden_dropout_prob), 'x, edge_index -> x'),
+            nn.Tanh(),
+            (TransformerConv(heads * self.hidden_size, self.hidden_size, heads=heads, dropout=self.hparams.hidden_dropout_prob), 'x, edge_index -> x'),
+            nn.Tanh(),
+            (TransformerConv(heads * self.hidden_size, self.hidden_size, heads=1, dropout=self.hparams.hidden_dropout_prob), 'x, edge_index -> x'),
+            nn.Tanh(),
             ])
         
         # Attention
@@ -407,7 +407,7 @@ class SynSemSentimentClassifier(pl.LightningModule):
         
         # Combine semantic and syntactic features
         h = torch.cat((sem_h, syn_h), dim=1)
-        h1 = F.relu(self.lin1(h))
+        h1 = torch.tanh(self.lin1(h))
         graph_embedding = self.dropout1(h1)
         
         # Get logits

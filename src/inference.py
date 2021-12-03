@@ -212,7 +212,7 @@ class InferenceAgent:
         return df[['id', 'text', 'term', 'label_id', 'label', 'tvt', 'pred_0', 'pred_1', 'pred_2']]
 
 def main():
-    device = 'cpu'
+    device = 'cuda'
     # Restaurant
     ## Bert
     restaurant_agent = InferenceAgent(
@@ -242,17 +242,17 @@ def main():
     pred_res = restaurant_agent.get_prediction()
     pred_res.to_csv(save_path, index=False)
     
-#     ## Sem
-#     restaurant_agent = InferenceAgent(
-#         proj_path=str(PROJ_PATH),
-#         model_name='synsem',
-#         ckpt_filename='epoch=4-val_loss=0.6445-val_acc=0.8003-val_macro_f1=0.7335-val_micro_f1=0.8003.ckpt',
-#         ckpt_dirname='model/restaurants',
-#         hparams_filename='../src/config/sem_restaurant_config.json',
-#         device='cpu',
-#     )
-#     pred_res = restaurant_agent.get_prediction()
-#     pred_res.to_csv('../output/synsem_restaurant.csv', index=False)
+    ## Sem
+    restaurant_agent = InferenceAgent(
+        proj_path=str(PROJ_PATH),
+        model_name='synsem',
+        ckpt_filename='model=synsem-epoch=7-val_loss=0.7547-val_acc=0.7819-val_auc=0.9026-val_macro_f1=0.7269-val_micro_f1=0.7819.ckpt',
+        ckpt_dirname='model/restaurants',
+        hparams_filename='../src/config/sem_restaurant_config.json',
+        device='cpu',
+    )
+    pred_res = restaurant_agent.get_prediction()
+    pred_res.to_csv('../output/sem_restaurant.csv', index=False)
     
     # Laptop
     ## Bert
@@ -269,33 +269,33 @@ def main():
     pred_res = laptop_agent.get_prediction()
     pred_res.to_csv(save_path, index=False)
     
-#     ## Syn
-#     laptop_agent = InferenceAgent(
-#         proj_path=str(PROJ_PATH), 
-#         model_name='syn',
-#         ckpt_filename='model=syn-epoch=3-val_loss=0.6911-val_acc=0.7665-val_auc=0.9204-val_macro_f1=0.7420-val_micro_f1=0.7665.ckpt',
-#         ckpt_dirname='model/laptops',
-#         hparams_filename='../src/config/syn_laptop_config.json',
-#         device=device,
-#     )
-#     save_path = '../output/syn_laptop.csv'
-#     print(f'Save to {save_path}')
-#     pred_res = laptop_agent.get_prediction()
-#     pred_res.to_csv(save_path, index=False)
+    ## Syn
+    laptop_agent = InferenceAgent(
+        proj_path=str(PROJ_PATH), 
+        model_name='syn',
+        ckpt_filename='model=syn-epoch=3-val_loss=0.6911-val_acc=0.7665-val_auc=0.9204-val_macro_f1=0.7420-val_micro_f1=0.7665.ckpt',
+        ckpt_dirname='model/laptops',
+        hparams_filename='../src/config/syn_laptop_config.json',
+        device=device,
+    )
+    save_path = '../output/syn_laptop.csv'
+    print(f'Save to {save_path}')
+    pred_res = laptop_agent.get_prediction()
+    pred_res.to_csv(save_path, index=False)
     
-#     ## SynSem
-#     laptop_agent = InferenceAgent(
-#         proj_path=str(PROJ_PATH), 
-#         model_name='synsem',
-#         ckpt_filename='epoch=4-val_loss=0.6445-val_acc=0.8003-val_macro_f1=0.7335-val_micro_f1=0.8003.ckpt',
-#         ckpt_dirname='model/laptops',
-#         hparams_filename='../src/config/sem_laptop_config.json',
-#         device=device,
-#     )
-#     save_path = '../output/sem_laptop.csv'
-#     print(f'Save to {save_path}')
-#     pred_res = laptop_agent.get_prediction()
-#     pred_res.to_csv(save_path, index=False)
+    ## SynSem
+    laptop_agent = InferenceAgent(
+        proj_path=str(PROJ_PATH), 
+        model_name='synsem',
+        ckpt_filename='model=synsem-epoch=9-val_loss=1.0983-val_acc=0.7500-val_auc=0.9203-val_macro_f1=0.7281-val_micro_f1=0.7500.ckpt',
+        ckpt_dirname='model/laptops',
+        hparams_filename='../src/config/sem_laptop_config.json',
+        device=device,
+    )
+    save_path = '../output/sem_laptop.csv'
+    print(f'Save to {save_path}')
+    pred_res = laptop_agent.get_prediction()
+    pred_res.to_csv(save_path, index=False)
         
 if __name__ == "__main__":
     main()

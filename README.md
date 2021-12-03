@@ -4,6 +4,7 @@
 ## Directory structure:
 
 ```
+.
 |   README.md
 |   requirement.txt
 |
@@ -34,17 +35,18 @@
 
 ### Libraries
 
-To create all neccessary library, please run:
+To install all neccessary libraries, please run:
 
 ```bash
 conda env create -f environment.yml
 ```
 
-In case, the version of Pytorch and Cuda are not compatible on your machine, please remove all related lib in the `.yml` file; then install Pytorch , Pytorch Geometric separately.
+In case, the version of Pytorch and Cuda are not compatible on your machine, please remove all related lib in the `.yml` file; then install Pytorch and Pytorch Geometric separately.
 
 
 ### PyTorch
 Please follow Pytorch installation instruction in this [link](https://pytorch.org/get-started/locally/).
+
 
 ### Torch Geometric
 ```bash
@@ -114,3 +116,6 @@ python src/inference.py
 2. Learn an ensemble model: notebook `experiment/4_ensemble.ipynb`
 
 
+## Saved checkpoint
+
+You can download our trained model [here](https://drive.google.com/drive/folders/1-FWzUqU7G5U-KpcmfI6soKdvkuFSrCGg?usp=sharing).
