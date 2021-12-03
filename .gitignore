@@ -2,3 +2,7 @@
 *pyc
 *.ckpt
 */lightning_logs/*
+misc/*
+experiment/restaurant/*
+experiment/laptop/*
+model/*
